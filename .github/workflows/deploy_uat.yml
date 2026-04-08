@@ -1,0 +1,51 @@
+name: Deploy to UAT (Merge to Main)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'dbt_project/**'
+      - 'cortex_code/**'
+      - 'configs/**'
+
+env:
+  SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+  SNOWFLAKE_USER: ${{ secrets.SF_UAT_USER }}
+  SNOWFLAKE_PASSWORD: ${{ secrets.SF_UAT_PASSWORD }}
+  SNOWFLAKE_ROLE: 'UAT_PIPELINE_ROLE'
+  SNOWFLAKE_DATABASE: SHOPSTREAM_UAT
+  SNOWFLAKE_SCHEMA: UAT_ANALYTICS
+  SNOWFLAKE_WAREHOUSE: UAT_TRANSFORM_WH
+  DBT_TARGET_ENV: uat
+
+jobs:
+  deploy-uat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r cortex_code/requirements.txt
+          pip install dbt-snowflake==1.7.0
+
+      - name: Deploy Snowflake Infrastructure (Python API)
+        run: python cortex_code/deploy_infrastructure.py uat
+
+      - name: Run dbt dependencies
+        working-directory: ./dbt_project
+        run: dbt deps
+
+      - name: Build dbt models
+        working-directory: ./dbt_project
+        run: dbt build --target ${{ env.DBT_TARGET_ENV }}
+
+      - name: Validate Deployment with Snowflake Cortex
+        run: python cortex_code/validate_deployment.py uat

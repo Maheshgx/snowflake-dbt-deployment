@@ -1,0 +1,8 @@
+{
+    "environment": "PROD",
+    "database": "SHOPSTREAM_PROD",
+    "raw_schema": "RAW_PROD",
+    "analytics_schema": "ANALYTICS_PROD",
+    "roles": ["PROD_PIPELINE_ROLE", "ANALYST_PROD", "REPORTER_PROD"],
+    "warehouse": "PROD_TRANSFORM_WH"
+}

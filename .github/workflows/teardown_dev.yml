@@ -1,0 +1,37 @@
+name: Teardown Ephemeral DEV Environment
+
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - 'dbt_project/**'
+      - 'cortex_code/**'
+      - 'configs/**'
+
+env:
+  SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+  SNOWFLAKE_USER: ${{ secrets.SF_DEV_USER }}
+  # Best Practice: Use Private Key instead of Password for Service Accounts
+  SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SF_DEV_PRIVATE_KEY }}
+  SNOWFLAKE_ROLE: 'DEV_PIPELINE_ROLE'
+  SNOWFLAKE_DATABASE: SHOPSTREAM_DEV_PR_${{ github.event.pull_request.number }}
+  SNOWFLAKE_WAREHOUSE: DEV_TRANSFORM_WH
+
+jobs:
+  cleanup-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r cortex_code/requirements.txt
+
+      - name: Teardown Snowflake Ephemeral Database
+        run: python cortex_code/teardown_infrastructure.py

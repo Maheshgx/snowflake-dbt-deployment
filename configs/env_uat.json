@@ -1,0 +1,8 @@
+{
+    "environment": "UAT",
+    "database": "SHOPSTREAM_UAT",
+    "raw_schema": "RAW_UAT",
+    "analytics_schema": "ANALYTICS_UAT",
+    "roles": ["UAT_PIPELINE_ROLE", "QA_ROLE"],
+    "warehouse": "UAT_TRANSFORM_WH"
+}

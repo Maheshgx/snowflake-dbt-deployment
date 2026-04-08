@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: fct_revenue
+    description: "Daily revenue aggregated by customer and order"
+    columns:
+      - name: order_id
+        description: "Primary key for the order"
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Foreign key to the customer"
+        tests:
+          - not_null
+      - name: total_revenue
+        description: "Calculated revenue for the order"
+        tests:
+          - not_null
+
+  - name: fct_customer_LTV
+    description: "Lifetime value calculation per customer"
+    columns:
+      - name: customer_id
+        description: "Primary key"
+        tests:
+          - unique
+          - not_null
+      - name: lifetime_value
+        description: "Total spend by the customer"
+        tests:
+          - not_null

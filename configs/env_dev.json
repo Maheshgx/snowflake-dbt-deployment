@@ -1,0 +1,8 @@
+{
+    "environment": "DEV",
+    "database": "SHOPSTREAM_DEV",
+    "raw_schema": "RAW_DEV",
+    "analytics_schema": "ANALYTICS_DEV",
+    "roles": ["DEV_PIPELINE_ROLE", "ANALYST_DEV"],
+    "warehouse": "DEV_TRANSFORM_WH"
+}
