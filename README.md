@@ -52,6 +52,9 @@ Here is how the codebase is organized to support this decoupled architecture:
   * `deploy_infrastructure.py`: Creates databases/schemas idempotently and grants permissions.
   * `teardown_infrastructure.py`: Safely cleans up ephemeral PR databases.
   * `validate_deployment.py`: Triggers Snowflake Cortex `DETECT_ANOMALIES` on the newly deployed data.
+* **`snowflake_objects/`**: Native Snowflake objects (Tables, Secure Views, Stages).
+  * `01_setup_raw_tables.sql`: DDL for base landing tables.
+  * `02_setup_secure_views.sql`: DDL for secure views that mask PII data.
 * **`dbt_project/`**: The dbt workspace.
   * `profiles.yml`: Environment-agnostic profile that uses runtime injected `env_var()` settings.
   * `models/`: The actual SQL transformation logic (e.g., `fct_revenue.sql`).
@@ -129,7 +132,7 @@ dbt build
 
 ## 7. CI/CD Workflow Explanation
 
-1. **Infrastructure as Code**: The pipelines first execute `cortex_code/deploy_infrastructure.py`. This ensures that the destination database exists and the correct RBAC roles have `USAGE` access. It reads the target state from `configs/env_*.json`.
+1. **Infrastructure as Code**: The pipelines first execute `cortex_code/deploy_infrastructure.py`. This reads the target state from `configs/env_*.json`, guarantees schemas exist, processes pure-Snowflake DDL scripts from `snowflake_objects/` (injecting dynamic DB names), and applies strict RBAC.
 2. **dbt Slim CI**: Instead of running `dbt build` on the entire project, `deploy_dev.yml` uses `--select state:modified+`. This means the pipeline isolates only the `.sql` files you modified in your PR, saving immense compute cost.
 3. **Automated Teardown**: To prevent Snowflake from filling up with hundreds of abandoned `DEV_PR_42` databases, `teardown_dev.yml` listens for the PR `closed` event and automatically executes `DROP DATABASE`.
 

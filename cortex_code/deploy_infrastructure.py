@@ -42,6 +42,35 @@ def get_connection_params(config):
 
     return params
 
+def deploy_native_objects(session, db_name, raw_schema):
+    """Executes pure Snowflake DDLs (Tables, Views, Stages) before dbt runs."""
+    objects_dir = "snowflake_objects"
+    if not os.path.exists(objects_dir):
+        print("No native snowflake objects found to deploy.")
+        return
+
+    print("Deploying Native Snowflake Objects...")
+    for filename in sorted(os.listdir(objects_dir)):
+        if filename.endswith(".sql"):
+            file_path = os.path.join(objects_dir, filename)
+            print(f" -> Executing {filename}...")
+            
+            with open(file_path, "r") as f:
+                sql_script = f.read()
+            
+            # Dynamically inject environment context
+            sql_script = sql_script.replace("{db_name}", db_name)
+            sql_script = sql_script.replace("{raw_schema}", raw_schema)
+            
+            # Split script by semicolon to run multiple statements
+            queries = [q.strip() for q in sql_script.split(';') if q.strip()]
+            for query in queries:
+                try:
+                    session.sql(query).collect()
+                except Exception as e:
+                    print(f"Error executing query: {query}\n{e}")
+                    raise e
+
 def deploy_infrastructure(session, config):
     db_name = os.getenv("SNOWFLAKE_DATABASE", config['database'])
     raw_schema = config['raw_schema']
@@ -53,7 +82,10 @@ def deploy_infrastructure(session, config):
     session.sql(f"CREATE SCHEMA IF NOT EXISTS {db_name}.{raw_schema}").collect()
     session.sql(f"CREATE SCHEMA IF NOT EXISTS {db_name}.{config['analytics_schema']}").collect()
     
-    # 2. Apply RBAC (Role-Based Access Control)
+    # 2. Deploy Native Snowflake Objects (Raw Tables, Secure Views, etc.)
+    deploy_native_objects(session, db_name, raw_schema)
+    
+    # 3. Apply RBAC (Role-Based Access Control)
     for role in config['roles']:
         # Note: In a real environment, you'd ensure the roles exist or create them if needed.
         # This assumes the roles have been provisioned by an account admin.
